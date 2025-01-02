@@ -1,15 +1,15 @@
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{mint_to, MintTo, Mint,  Token, TokenAccount},
+    token::{ Mint,  Token, TokenAccount},
    
 };
-use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
+// use pyth_solana_receiver_sdk::price_update::PriceUpdateV2;
 
-declare_id!("E5kCCJUv6hpYACYpPpBYh1mEfJSXuvKwvUytaU4tr42B");
+declare_id!("6dud1uBsMiZLtLDVy6ZgUFN4AgpcFHj363h1db13UEj7");
 
 #[program]
-pub mod token_sale {
+pub mod transfer_tokens {
     use super::*;
 
     pub fn initialize_sale(ctx: Context<InitializeSale>, token_price_usd: f64, mint_decimals: u64) -> Result<()> {
@@ -33,22 +33,23 @@ pub mod token_sale {
         require!(!sale_config.paused, ErrorCode::SalePaused);
 
         // Fetch SOL/USD price from Pyth
-        let maximum_age: u64 = 30; // 30 seconds maximum age for price data
-        let feed_id: [u8; 32] = get_feed_id_from_hex(
-            "0xCa7cXpqoq0GqEHxTnXzf7D6r5SDiGd1Ja6oFgwX9oRE6"
-        )?;
-        let price_data = ctx.accounts.price_update.get_price_no_older_than(
-            &Clock::get()?,
-            maximum_age,
-            &feed_id,
-        )?;
-        let sol_price_usd = (price_data.price as f64) * 10f64.powi(price_data.exponent);
+        // let maximum_age: u64 = 30; // 30 seconds maximum age for price data
+        // let feed_id: [u8; 32] = get_feed_id_from_hex(
+        //     "0xCa7cXpqoq0GqEHxTnXzf7D6r5SDiGd1Ja6oFgwX9oRE6"
+        // )?;
+        // let price_data = ctx.accounts.price_update.get_price_no_older_than(
+        //     &Clock::get()?,
+        //     maximum_age,
+        //     &feed_id,
+        // )?;
+        // let sol_price_usd = (price_data.price as f64) * 10f64.powi(price_data.exponent);
+        let sol_price_usd:f64 = 190.0; 
 
-        // Calculate token amount
+        // // Calculate token amount
         let token_price_usd = sale_config.token_price_usd;
         let sol_amount_usd = sol_amount as f64 / 10_f64.powf(9.0) * sol_price_usd;
         let decimals = sale_config.mint_decimals;
-        // let mint: spl_token::state::Mint = spl_token::state::Mint::unpack(&ctx.accounts.mint.data.borrow())?;
+        // // let mint: spl_token::state::Mint = spl_token::state::Mint::unpack(&ctx.accounts.mint.data.borrow())?;
         let token_amount = (sol_amount_usd / token_price_usd
             * 10_f64.powf(decimals as f64)) as u64;
 
@@ -112,17 +113,17 @@ pub mod token_sale {
     }
 }
 
-fn get_feed_id_from_hex(hex_string: &str) -> Result<[u8; 32]> {
-    let mut bytes = [0u8; 32];
-    let decoded = bs58::decode(hex_string)
-        .into_vec()
-        .map_err(|_| error!(ErrorCode::InvalidPythFeedId))?;
-    if decoded.len() != 32 {
-        return Err(error!(ErrorCode::InvalidPythFeedId));
-    }
-    bytes.copy_from_slice(&decoded);
-    Ok(bytes)
-}
+// fn get_feed_id_from_hex(hex_string: &str) -> Result<[u8; 32]> {
+//     let mut bytes = [0u8; 32];
+//     let decoded = bs58::decode(hex_string)
+//         .into_vec()
+//         .map_err(|_| error!(ErrorCode::InvalidPythFeedId))?;
+//     if decoded.len() != 32 {
+//         return Err(error!(ErrorCode::InvalidPythFeedId));
+//     }
+//     bytes.copy_from_slice(&decoded);
+//     Ok(bytes)
+// }
 
 #[derive(Accounts)]
 pub struct BuyTokens<'info> {
@@ -160,8 +161,8 @@ pub struct BuyTokens<'info> {
     )]
     pub buyer_token_account: Account<'info, TokenAccount>,
 
-    #[account(mut)]
-    pub price_update: Account<'info, PriceUpdateV2>,
+    // #[account(mut)]
+    // pub price_update: Account<'info, PriceUpdateV2>,
 
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -235,7 +236,7 @@ pub enum ErrorCode {
     InvalidPythFeedId,
 
     #[msg("Insufficient tokens in program account")]
-    InsufficientTokens,
+    InsufficientTokens,  
 
     #[msg("Wrong Program authority")]
     WrongProgramAuthority,
